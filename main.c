@@ -58,20 +58,47 @@ uchar usbFunctionSetup(uchar data[8]) {
 		ledRedOff();
 
 	} else if (data[1] == USBASP_FUNC_TRANSMIT) {
-		log_print("transmit request: %02x %02x %02x %02x \n", data[2], data[3], data[4], data[5]);
-
-		// replyBuffer[0] = ispTransmit(data[2]);
-		// replyBuffer[1] = ispTransmit(data[3]);
-		// replyBuffer[2] = ispTransmit(data[4]);
-		// replyBuffer[3] = ispTransmit(data[5]);
+		log_print("transmit request: %02x %02x %02x %02x ", data[2], data[3], data[4], data[5]);
 
 		// [0x30, 0x00, [byte], 0x00] - respond with signature bytes
+		switch (data[2])
+		{
+		case 0x30:
+			/* code */
+			replyBuffer[3] = boot_signature_byte_get(data[4] * 2);
+			len = 4;
+			break;
+		case 0x58:
+			switch (data[3]) {
+			case 0x00:
+				replyBuffer[3] = boot_lock_fuse_bits_get(GET_LOCK_BITS);
+				break;
+			case 0x08:
+				replyBuffer[3] = boot_lock_fuse_bits_get(GET_HIGH_FUSE_BITS);
+				break;
+			default:
+				break;
+			}
+			len = 4;
+			break;
+		case 0x50:
+			switch (data[3]) {
+			case 0x00:
+				replyBuffer[3] = boot_lock_fuse_bits_get(GET_LOW_FUSE_BITS);
+				break;
+			case 0x08:
+				replyBuffer[3] = boot_lock_fuse_bits_get(GET_EXTENDED_FUSE_BITS);
+				break;
 
-		replyBuffer[0] = 0;
-		replyBuffer[1] = 0;
-		replyBuffer[2] = 0;
-		replyBuffer[3] = boot_signature_byte_get(data[4]*2);
-		len = 4;
+			default:
+				break;
+			}
+			len = 4;
+			break;
+		default:
+			break;
+		}
+
 
 	} else if (data[1] == USBASP_FUNC_READFLASH) {
 		log_print("read flash");
