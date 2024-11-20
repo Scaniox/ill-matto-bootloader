@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "io.h": "c",
+        "logging.h": "c",
+        "pgmspace.h": "c",
+        "boot.h": "c"
+    }
+}

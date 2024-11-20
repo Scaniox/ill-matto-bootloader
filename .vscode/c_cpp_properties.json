@@ -1,0 +1,31 @@
+{
+    "configurations": [
+        {
+            "name": "avrlibc",
+            "includePath": [
+                ""
+            ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    ""
+                ]
+            },
+            "defines": [
+                "F_CPU=12000000L",
+                "PLATFORMIO=60116",
+                "ARDUINO_AVR_ATmega644",
+                "__AVR_ATmega644P__",
+                ""
+            ],
+            "cStandard": "gnu11",
+            "cppStandard": "gnu++11",
+            "compilerPath": "C:/Users/alexl/.platformio/packages/toolchain-atmelavr/bin/avr-gcc.exe",
+            "compilerArgs": [
+                "-mmcu=atmega644p",
+                ""
+            ]
+        }
+    ],
+    "version": 4
+}
