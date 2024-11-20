@@ -127,8 +127,8 @@ the newest features and options.
 #define USB_CFG_DEVICE_VERSION  0x04, 0x01
 /* Version number of the device: Minor number first, then major number.
  */
-#define	USB_CFG_VENDOR_NAME     'w', 'w', 'w', '.', 'f', 'i', 's', 'c', 'h', 'l', '.', 'd', 'e'
-#define USB_CFG_VENDOR_NAME_LEN 13
+// #define	USB_CFG_VENDOR_NAME     'w', 'w', 'w', '.', 'f', 'i', 's', 'c', 'h', 'l', '.', 'd', 'e'
+// #define USB_CFG_VENDOR_NAME_LEN 13
 /* These two values define the vendor name returned by the USB device. The name
  * must be given as a list of characters under single quotes. The characters
  * are interpreted as Unicode (UTF-16) entities.
@@ -137,8 +137,8 @@ the newest features and options.
  * obdev's free shared VID/PID pair. See the file USBID-License.txt for
  * details.
  */
-#define	USB_CFG_DEVICE_NAME		'U', 'S', 'B', 'a', 's', 'p'
-#define	USB_CFG_DEVICE_NAME_LEN	6
+// #define	USB_CFG_DEVICE_NAME		'U', 'S', 'B', 'a', 's', 'p'
+// #define	USB_CFG_DEVICE_NAME_LEN	6
 /* Same as above for the device name. If you don't want a device name, undefine
  * the macros. See the file USBID-License.txt before you assign a name.
  */
@@ -210,12 +210,12 @@ the newest features and options.
  *
  */
 
-#define USB_CFG_DESCR_PROPS_DEVICE                  0
-#define USB_CFG_DESCR_PROPS_CONFIGURATION           0
-#define USB_CFG_DESCR_PROPS_STRINGS                 0
-#define USB_CFG_DESCR_PROPS_STRING_0                0
-#define USB_CFG_DESCR_PROPS_STRING_VENDOR           0
-#define USB_CFG_DESCR_PROPS_STRING_PRODUCT          0
+#define USB_CFG_DESCR_PROPS_DEVICE                  (USB_PROP_IS_DYNAMIC | USB_PROP_IS_RAM)
+#define USB_CFG_DESCR_PROPS_CONFIGURATION           (USB_PROP_IS_DYNAMIC | USB_PROP_IS_RAM)
+#define USB_CFG_DESCR_PROPS_STRINGS                 (USB_PROP_IS_DYNAMIC | USB_PROP_IS_RAM)
+#define USB_CFG_DESCR_PROPS_STRING_0                (USB_PROP_IS_DYNAMIC | USB_PROP_IS_RAM)
+#define USB_CFG_DESCR_PROPS_STRING_VENDOR           (USB_PROP_IS_DYNAMIC | USB_PROP_IS_RAM)
+#define USB_CFG_DESCR_PROPS_STRING_PRODUCT          (USB_PROP_IS_DYNAMIC | USB_PROP_IS_RAM)
 #define USB_CFG_DESCR_PROPS_STRING_SERIAL_NUMBER    0
 #define USB_CFG_DESCR_PROPS_HID                     0
 #define USB_CFG_DESCR_PROPS_HID_REPORT              0

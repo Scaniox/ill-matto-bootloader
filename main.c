@@ -40,17 +40,137 @@ static unsigned int prog_pagesize;
 static uchar prog_blockflags;
 static uchar prog_pagecounter;
 
-// usbMsgLen_t usbFunctionDescriptor(struct usbRequest* rq) {
-// 	switch (rq)
-// 	{
-// 	case 0: // usbDescriptorString0
-// 		/* code */
-// 		break;
+const char ram_usbDescriptorString0[] = { /* language descriptor */
+	4,          /* sizeof(usbDescriptorString0): length of descriptor in bytes */
+	3,          /* descriptor type */
+	0x09, 0x04, /* language index (0x0409 = US-English) */
+};
+
+const int ram_usbDescriptorStringVendor[] = {
+	USB_STRING_DESCRIPTOR_HEADER(13),
+	'w', 'w', 'w', '.', 'f', 'i', 's', 'c', 'h', 'l', '.', 'd', 'e'
+};
+
+const int ram_usbDescriptorStringDevice[] = {
+	USB_STRING_DESCRIPTOR_HEADER(6),
+	'U', 'S', 'B', 'a', 's', 'p'
+};
+
+const char ram_usbDescriptorDevice[] = {    /* USB device descriptor */
+	18,         /* sizeof(usbDescriptorDevice): length of descriptor in bytes */
+	USBDESCR_DEVICE,        /* descriptor type */
+	0x10, 0x01,             /* USB version supported */
+	USB_CFG_DEVICE_CLASS,
+	USB_CFG_DEVICE_SUBCLASS,
+	0,                      /* protocol */
+	8,                      /* max packet size */
+	/* the following two casts affect the first byte of the constant only, but
+	 * that's sufficient to avoid a warning with the default values.
+	 */
+	(char)USB_CFG_VENDOR_ID,/* 2 bytes */
+	(char)USB_CFG_DEVICE_ID,/* 2 bytes */
+	USB_CFG_DEVICE_VERSION, /* 2 bytes */
+	USB_CFG_DESCR_PROPS_STRING_VENDOR != 0 ? 1 : 0,         /* manufacturer string index */
+	USB_CFG_DESCR_PROPS_STRING_PRODUCT != 0 ? 2 : 0,        /* product string index */
+	USB_CFG_DESCR_PROPS_STRING_SERIAL_NUMBER != 0 ? 3 : 0,  /* serial number string index */
+	1,          /* number of configurations */
+};
+
+const char ram_usbDescriptorConfiguration[] = {    /* USB configuration descriptor */
+	9,          /* sizeof(usbDescriptorConfiguration): length of descriptor in bytes */
+	USBDESCR_CONFIG,    /* descriptor type */
+	18 + 7 * USB_CFG_HAVE_INTRIN_ENDPOINT + 7 * USB_CFG_HAVE_INTRIN_ENDPOINT3 +
+				(USB_CFG_DESCR_PROPS_HID & 0xff), 0,
+	/* total length of data returned (including inlined descriptors) */
+1,          /* number of interfaces in this configuration */
+1,          /* index of this configuration */
+0,          /* configuration name string index */
+#if USB_CFG_IS_SELF_POWERED
+	(1 << 7) | USBATTR_SELFPOWER,       /* attributes */
+#else
+	(1 << 7),                           /* attributes */
+#endif
+	USB_CFG_MAX_BUS_POWER / 2,            /* max USB current in 2mA units */
+	/* interface descriptor follows inline: */
+		9,          /* sizeof(usbDescrInterface): length of descriptor in bytes */
+		USBDESCR_INTERFACE, /* descriptor type */
+		0,          /* index of this interface */
+		0,          /* alternate setting for this interface */
+		USB_CFG_HAVE_INTRIN_ENDPOINT + USB_CFG_HAVE_INTRIN_ENDPOINT3, /* endpoints excl 0: number of endpoint descriptors to follow */
+		USB_CFG_INTERFACE_CLASS,
+		USB_CFG_INTERFACE_SUBCLASS,
+		USB_CFG_INTERFACE_PROTOCOL,
+		0,          /* string index for interface */
+	#if (USB_CFG_DESCR_PROPS_HID & 0xff)    /* HID descriptor */
+		9,          /* sizeof(usbDescrHID): length of descriptor in bytes */
+		USBDESCR_HID,   /* descriptor type: HID */
+		0x01, 0x01, /* BCD representation of HID version */
+		0x00,       /* target country code */
+		0x01,       /* number of HID Report (or other HID class) Descriptor infos to follow */
+		0x22,       /* descriptor type: report */
+		USB_CFG_HID_REPORT_DESCRIPTOR_LENGTH, 0,  /* total length of report descriptor */
+	#endif
+	#if USB_CFG_HAVE_INTRIN_ENDPOINT    /* endpoint descriptor for endpoint 1 */
+		7,          /* sizeof(usbDescrEndpoint) */
+		USBDESCR_ENDPOINT,  /* descriptor type = endpoint */
+		(char)0x81, /* IN endpoint number 1 */
+		0x03,       /* attrib: Interrupt endpoint */
+		8, 0,       /* maximum packet size */
+		USB_CFG_INTR_POLL_INTERVAL, /* in ms */
+	#endif
+	#if USB_CFG_HAVE_INTRIN_ENDPOINT3   /* endpoint descriptor for endpoint 3 */
+		7,          /* sizeof(usbDescrEndpoint) */
+		USBDESCR_ENDPOINT,  /* descriptor type = endpoint */
+		(char)(0x80 | USB_CFG_EP3_NUMBER), /* IN endpoint number 3 */
+		0x03,       /* attrib: Interrupt endpoint */
+		8, 0,       /* maximum packet size */
+		USB_CFG_INTR_POLL_INTERVAL, /* in ms */
+	#endif
+};
+
+
+usbMsgLen_t getStringDescriptor(struct usbRequest* rq) {
+	switch (rq->wValue.bytes[0])
+	{
+	case 0: // usbDescriptorString0
+		usbMsgPtr = ram_usbDescriptorString0;
+		return sizeof(ram_usbDescriptorString0);
+		break;
+	case 1: // usbDescriptorStringVendor
+		usbMsgPtr = ram_usbDescriptorStringVendor;
+		return sizeof(ram_usbDescriptorStringVendor);
+		break;
+	case 2: // usbDescriptorStringDevice
+		usbMsgPtr = ram_usbDescriptorStringDevice;
+		return sizeof(ram_usbDescriptorStringDevice);
+		break;
+	case 3: // usbDescriptorStringSerialNumber
+		break;
+
+	default:
+		break;
+	}
+}
+
+usbMsgLen_t usbFunctionDescriptor(struct usbRequest* rq) {
+	switch (rq->wValue.bytes[1]){
+	case USBDESCR_DEVICE:
+		usbMsgPtr = ram_usbDescriptorDevice;
+		return sizeof(ram_usbDescriptorDevice);
+		break;
+	case USBDESCR_CONFIG:
+		usbMsgPtr = ram_usbDescriptorConfiguration;
+		return sizeof(ram_usbDescriptorConfiguration);
+		break;
+	case USBDESCR_STRING:
+		return getStringDescriptor(rq);
+		break;
 	
-// 	default:
-// 		break;
-// 	}
-// }
+	default:
+	log_print("asking for unknown descriptor")
+		break;
+	}
+}
 
 uchar usbFunctionSetup(uchar* data) {
 
@@ -296,8 +416,8 @@ uchar usbFunctionWrite(uchar* data, uchar len) {
 int main(void) {
 	uchar i, j;
 
-	// MCUCR = _BV(IVCE);
-	// MCUCR = _BV(IVSEL); // clear IVCE 
+	MCUCR = _BV(IVCE);
+	MCUCR = _BV(IVSEL); // clear IVCE 
 
 	init_debug_uart0();
 

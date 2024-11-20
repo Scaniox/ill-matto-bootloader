@@ -136,7 +136,7 @@ PROGMEM const char usbDescriptorDevice[] = {    /* USB device descriptor */
 #define USB_CFG_DESCR_PROPS_HID     9   /* length of HID descriptor in config descriptor below */
 #endif
 
-#if USB_CFG_DESCR_PROPS_CONFIGURATION == 0
+#if (USB_CFG_DESCR_PROPS_CONFIGURATION == 0)
 #undef USB_CFG_DESCR_PROPS_CONFIGURATION
 #define USB_CFG_DESCR_PROPS_CONFIGURATION   sizeof(usbDescriptorConfiguration)
 PROGMEM const char usbDescriptorConfiguration[] = {    /* USB configuration descriptor */
