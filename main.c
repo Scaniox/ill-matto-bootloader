@@ -255,7 +255,7 @@ uchar usbFunctionSetup(uchar* data) {
 		prog_nbytes = (data[7] << 8) | data[6];
 		prog_state = PROG_STATE_READEEPROM;
 		len = 0xff; /* multiple in */
-		log_print("read EEPROM 0x%lx", prog_address);
+		//log_print("read EEPROM 0x%lx", prog_address);
 
 	} else if (rq->bRequest == USBASP_FUNC_ENABLEPROG) {
 		log_print("enable prog");
@@ -287,7 +287,7 @@ uchar usbFunctionSetup(uchar* data) {
 		prog_nbytes = (data[7] << 8) | data[6];
 		prog_state = PROG_STATE_WRITEEEPROM;
 		len = 0xff; /* multiple out */
-		log_print("write eeprom 0x%lx", prog_address);
+		// log_print("write eeprom 0x%lx", prog_address);
 
 	} else if (rq->bRequest == USBASP_FUNC_SETLONGADDRESS) {
 
@@ -393,6 +393,7 @@ uchar usbFunctionWrite(uchar* data, uchar len) {
 		} else {
 			/* EEPROM */
 			// ispWriteEEPROM(prog_address, data[i]);
+			eeprom_write_byte(prog_address, data[i]);
 		}
 
 		prog_nbytes--;
@@ -431,14 +432,11 @@ int main(void) {
 
 	/* output SE0 for USB reset */
 	// DDRB = ~0;
-	j = 0;
-	/* USB Reset by device only required on Watchdog Reset */
-	while (--j) {
-		i = 0;
-		/* delay >10ms for USB reset */
-		while (--i)
-			;
-	}
+	usbDeviceDisconnect();
+	uint64_t timer = UINT16_MAX * 20000;
+	while(timer--) __asm("nop");
+	usbDeviceConnect();
+
 	/* all USB and ISP pins inputs */
 	// DDRB = 0;
 
