@@ -7,8 +7,8 @@
 # TARGET=atmega8    HFUSE=0xc9  LFUSE=0xef
 # TARGET=atmega48   HFUSE=0xdd  LFUSE=0xff
 # TARGET=at90s2313
-# TARGET=atmega1284p
-TARGET=atmega644p
+TARGET=atmega1284p
+# TARGET=atmega644p
 HFUSE=0xc9
 LFUSE=0xef
 
@@ -37,8 +37,8 @@ help:
 	@echo "       ISP=${ISP}"
 	@echo "       PORT=${PORT}"
 
-# COMPILE = avr-gcc -Wall -O2 -Iusbdrv -I. -mmcu=$(TARGET) #-Ttext=0x1E000 # -DDEBUG_LEVEL=2
-COMPILE = avr-gcc -Wall -O2 -Iusbdrv -I. -mmcu=$(TARGET) -Ttext=0xE000 # -DDEBUG_LEVEL=2
+COMPILE = avr-gcc -Wall -Os -Iusbdrv -I. -mmcu=$(TARGET) -Ttext=0x1E000 # -DDEBUG_LEVEL=2
+# COMPILE = avr-gcc -Wall -O2 -Iusbdrv -I. -mmcu=$(TARGET) -Ttext=0xE000 # -DDEBUG_LEVEL=2
 
 OBJECTS = usbdrv/usbdrv.o usbdrv/usbdrvasm.o usbdrv/oddebug.o clock.o uart.o main.o
 

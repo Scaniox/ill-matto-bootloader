@@ -128,7 +128,6 @@ const char ram_usbDescriptorConfiguration[] = {    /* USB configuration descript
 	#endif
 };
 
-
 usbMsgLen_t getStringDescriptor(struct usbRequest* rq) {
 	switch (rq->wValue.bytes[0])
 	{
@@ -416,6 +415,7 @@ uchar usbFunctionWrite(uchar* data, uchar len) {
 int main(void) {
 	uchar i, j;
 
+	// move ISRs to boot flash
 	MCUCR = _BV(IVCE);
 	MCUCR = _BV(IVSEL); // clear IVCE 
 
