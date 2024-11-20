@@ -40,6 +40,8 @@ static unsigned int prog_pagesize;
 static uchar prog_blockflags;
 static uchar prog_pagecounter;
 
+int finished = 0;
+
 const char ram_usbDescriptorString0[] = { /* language descriptor */
 	4,          /* sizeof(usbDescriptorString0): length of descriptor in bytes */
 	3,          /* descriptor type */
@@ -189,6 +191,7 @@ uchar usbFunctionSetup(uchar* data) {
 
 	} else if (rq->bRequest == USBASP_FUNC_DISCONNECT) {
 		log_print("disconnecting");
+		finished = 1;
 		ledRedOff();
 
 	} else if (rq->bRequest == USBASP_FUNC_TRANSMIT) {
@@ -242,7 +245,7 @@ uchar usbFunctionSetup(uchar* data) {
 		prog_nbytes = (data[7] << 8) | data[6];
 		prog_state = PROG_STATE_READFLASH;
 		len = 0xff; /* multiple in */
-		log_print("read flash from 0x%lx", prog_address);
+		// log_print("read flash from 0x%lx", prog_address);
 
 	} else if (rq->bRequest == USBASP_FUNC_READEEPROM) {
 
@@ -292,7 +295,7 @@ uchar usbFunctionSetup(uchar* data) {
 		prog_address_newmode = 1;
 		/* set new address */
 		prog_address = *((unsigned long*) &data[2]);
-		log_print("set Long address to 0x%lx", prog_address);
+		// log_print("set Long address to 0x%lx", prog_address);
 
 	} else if (rq->bRequest == USBASP_FUNC_SETISPSCK) {
 		log_print("set spi clock");
@@ -330,9 +333,9 @@ uchar usbFunctionRead(uchar* data, uchar len) {
 	for (i = 0; i < len; i++) {
 		if (prog_state == PROG_STATE_READFLASH) {
 			// data[i] = ispReadFlash(prog_address);
-			// data[i] = (prog_address > UINT16_MAX) ? pgm_read_byte_far(prog_address) : pgm_read_byte_near(prog_address);
+			data[i] = (prog_address > UINT16_MAX) ? pgm_read_byte_far(prog_address) : pgm_read_byte_near(prog_address);
 		} else {
-			// data[i] = ispReadEEPROM(prog_address);
+			data[i] = eeprom_read_byte(prog_address);
 		}
 		prog_address++;
 	}
@@ -464,8 +467,22 @@ int main(void) {
 	usbInit();
 	log_print("bootloader initted");
 	sei();
-	for (;;) {
+	while (!finished) {
 		usbPoll();
 	}
+
+	// wait a second before booting so that avrdude doesn't think we've dissapeared
+	uint16_t cooldown = UINT16_MAX;
+	while (cooldown--) {
+		usbPoll();
+	}
+
+	usbDeviceDisconnect();
+	// put ISRs back to app
+	MCUCR = _BV(IVCE);
+	MCUCR = 0; 
+	// start app
+	__asm("jmp 0");
+
 	return 0;
 }
