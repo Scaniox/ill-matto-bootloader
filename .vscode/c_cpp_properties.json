@@ -22,7 +22,7 @@
             "cppStandard": "gnu++11",
             "compilerPath": "C:/Users/alexl/.platformio/packages/toolchain-atmelavr/bin/avr-gcc.exe",
             "compilerArgs": [
-                "-mmcu=atmega644p",
+                "-mmcu=atmega1284p",
                 ""
             ]
         }

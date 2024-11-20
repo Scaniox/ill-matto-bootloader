@@ -47,7 +47,6 @@ uchar usbFunctionSetup(uchar data[8]) {
 	if (data[1] == USBASP_FUNC_CONNECT) {
 		log_print("connecting");
 
-
 		/* set compatibility mode of address delivering */
 		prog_address_newmode = 0;
 
@@ -101,7 +100,6 @@ uchar usbFunctionSetup(uchar data[8]) {
 
 
 	} else if (data[1] == USBASP_FUNC_READFLASH) {
-		log_print("read flash");
 
 		if (!prog_address_newmode)
 			prog_address = (data[3] << 8) | data[2];
@@ -109,9 +107,9 @@ uchar usbFunctionSetup(uchar data[8]) {
 		prog_nbytes = (data[7] << 8) | data[6];
 		prog_state = PROG_STATE_READFLASH;
 		len = 0xff; /* multiple in */
+		log_print("read flash from 0x%lx", prog_address);
 
 	} else if (data[1] == USBASP_FUNC_READEEPROM) {
-		log_print("read EEPROM");
 
 		if (!prog_address_newmode)
 			prog_address = (data[3] << 8) | data[2];
@@ -119,6 +117,7 @@ uchar usbFunctionSetup(uchar data[8]) {
 		prog_nbytes = (data[7] << 8) | data[6];
 		prog_state = PROG_STATE_READEEPROM;
 		len = 0xff; /* multiple in */
+		log_print("read EEPROM 0x%lx", prog_address);
 
 	} else if (data[1] == USBASP_FUNC_ENABLEPROG) {
 		log_print("enable prog");
@@ -126,8 +125,6 @@ uchar usbFunctionSetup(uchar data[8]) {
 		len = 1;
 
 	} else if (data[1] == USBASP_FUNC_WRITEFLASH) {
-		log_print("write flash");
-
 		if (!prog_address_newmode)
 			prog_address = (data[3] << 8) | data[2];
 
@@ -140,9 +137,9 @@ uchar usbFunctionSetup(uchar data[8]) {
 		prog_nbytes = (data[7] << 8) | data[6];
 		prog_state = PROG_STATE_WRITEFLASH;
 		len = 0xff; /* multiple out */
+		log_print("write flash 0x%lx", prog_address);
 
 	} else if (data[1] == USBASP_FUNC_WRITEEEPROM) {
-		log_print("write eeprom");
 
 		if (!prog_address_newmode)
 			prog_address = (data[3] << 8) | data[2];
@@ -152,14 +149,15 @@ uchar usbFunctionSetup(uchar data[8]) {
 		prog_nbytes = (data[7] << 8) | data[6];
 		prog_state = PROG_STATE_WRITEEEPROM;
 		len = 0xff; /* multiple out */
+		log_print("write eeprom 0x%lx", prog_address);
 
 	} else if (data[1] == USBASP_FUNC_SETLONGADDRESS) {
-		log_print("set Long address");
 
 		/* set new mode of address delivering (ignore address delivered in commands) */
 		prog_address_newmode = 1;
 		/* set new address */
 		prog_address = *((unsigned long*) &data[2]);
+		log_print("set Long address to 0x%lx", prog_address);
 
 	} else if (data[1] == USBASP_FUNC_SETISPSCK) {
 		log_print("set spi clock");
@@ -168,67 +166,6 @@ uchar usbFunctionSetup(uchar data[8]) {
 		prog_sck = data[2];
 		replyBuffer[0] = 0;
 		len = 1;
-
-	} else if (data[1] == USBASP_FUNC_TPI_CONNECT) {
-		log_print("TPI connect");
-		// tpi_dly_cnt = data[2] | (data[3] << 8);
-
-		/* RST high */
-		// ISP_OUT |= (1 << ISP_RST);
-		// ISP_DDR |= (1 << ISP_RST);
-
-		clockWait(3);
-
-		/* RST low */
-		// ISP_OUT &= ~(1 << ISP_RST);
-		ledRedOn();
-
-		clockWait(16);
-		// tpi_init();
-	
-	} else if (data[1] == USBASP_FUNC_TPI_DISCONNECT) {
-		log_print("TPI disconnect");
-
-		// tpi_send_byte(TPI_OP_SSTCS(TPISR));
-		// tpi_send_byte(0);
-
-		clockWait(10);
-
-		/* pulse RST */
-		// ISP_OUT |= (1 << ISP_RST);
-		clockWait(5);
-		// ISP_OUT &= ~(1 << ISP_RST);
-		clockWait(5);
-
-		/* set all ISP pins inputs */
-		// ISP_DDR &= ~((1 << ISP_RST) | (1 << ISP_SCK) | (1 << ISP_MOSI));
-		/* switch pullups off */
-		// ISP_OUT &= ~((1 << ISP_RST) | (1 << ISP_SCK) | (1 << ISP_MOSI));
-
-		ledRedOff();
-	
-	} else if (data[1] == USBASP_FUNC_TPI_RAWREAD) {
-		log_print("TPI raw read");
-		// replyBuffer[0] = tpi_recv_byte();
-		len = 1;
-	
-	} else if (data[1] == USBASP_FUNC_TPI_RAWWRITE) {
-		log_print("TPI raw write");
-		// tpi_send_byte(data[2]);
-	
-	} else if (data[1] == USBASP_FUNC_TPI_READBLOCK) {
-		log_print("TPI readblock");
-		prog_address = (data[3] << 8) | data[2];
-		prog_nbytes = (data[7] << 8) | data[6];
-		prog_state = PROG_STATE_TPI_READ;
-		len = 0xff; /* multiple in */
-	
-	} else if (data[1] == USBASP_FUNC_TPI_WRITEBLOCK) {
-		log_print("TPI writeblock");
-		prog_address = (data[3] << 8) | data[2];
-		prog_nbytes = (data[7] << 8) | data[6];
-		prog_state = PROG_STATE_TPI_WRITE;
-		len = 0xff; /* multiple out */
 	
 	} else if (data[1] == USBASP_FUNC_GETCAPABILITIES) {
 		// log_print("get capabilities asked");
@@ -250,22 +187,15 @@ uchar usbFunctionRead(uchar *data, uchar len) {
 
 	/* check if programmer is in correct read state */
 	if ((prog_state != PROG_STATE_READFLASH) && (prog_state
-			!= PROG_STATE_READEEPROM) && (prog_state != PROG_STATE_TPI_READ)) {
+			!= PROG_STATE_READEEPROM)) {
 		return 0xff;
-	}
-
-	/* fill packet TPI mode */
-	if(prog_state == PROG_STATE_TPI_READ)
-	{
-		// tpi_read_block(prog_address, data, len);
-		prog_address += len;
-		return len;
 	}
 
 	/* fill packet ISP mode */
 	for (i = 0; i < len; i++) {
 		if (prog_state == PROG_STATE_READFLASH) {
 			// data[i] = ispReadFlash(prog_address);
+			data[i] = (prog_address > UINT16_MAX) ? pgm_read_byte_far(prog_address) : pgm_read_byte_near(prog_address);
 		} else {
 			// data[i] = ispReadEEPROM(prog_address);
 		}
