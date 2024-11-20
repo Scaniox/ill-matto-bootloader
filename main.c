@@ -40,11 +40,27 @@ static unsigned int prog_pagesize;
 static uchar prog_blockflags;
 static uchar prog_pagecounter;
 
-uchar usbFunctionSetup(uchar data[8]) {
+// usbMsgLen_t usbFunctionDescriptor(struct usbRequest* rq) {
+// 	switch (rq)
+// 	{
+// 	case 0: // usbDescriptorString0
+// 		/* code */
+// 		break;
+	
+// 	default:
+// 		break;
+// 	}
+// }
+
+uchar usbFunctionSetup(uchar* data) {
+
+	usbRequest_t* rq = (void*)data;
 
 	uchar len = 0;
 
-	if (data[1] == USBASP_FUNC_CONNECT) {
+	// log_print("request type: %x", rq->bmRequestType);
+
+	if (rq->bRequest == USBASP_FUNC_CONNECT) {
 		log_print("connecting");
 
 		/* set compatibility mode of address delivering */
@@ -52,11 +68,11 @@ uchar usbFunctionSetup(uchar data[8]) {
 
 		ledRedOn();
 
-	} else if (data[1] == USBASP_FUNC_DISCONNECT) {
+	} else if (rq->bRequest == USBASP_FUNC_DISCONNECT) {
 		log_print("disconnecting");
 		ledRedOff();
 
-	} else if (data[1] == USBASP_FUNC_TRANSMIT) {
+	} else if (rq->bRequest == USBASP_FUNC_TRANSMIT) {
 		log_print("transmit request: %02x %02x %02x %02x ", data[2], data[3], data[4], data[5]);
 
 		// [0x30, 0x00, [byte], 0x00] - respond with signature bytes
@@ -99,7 +115,7 @@ uchar usbFunctionSetup(uchar data[8]) {
 		}
 
 
-	} else if (data[1] == USBASP_FUNC_READFLASH) {
+	} else if (rq->bRequest == USBASP_FUNC_READFLASH) {
 
 		if (!prog_address_newmode)
 			prog_address = (data[3] << 8) | data[2];
@@ -109,7 +125,7 @@ uchar usbFunctionSetup(uchar data[8]) {
 		len = 0xff; /* multiple in */
 		log_print("read flash from 0x%lx", prog_address);
 
-	} else if (data[1] == USBASP_FUNC_READEEPROM) {
+	} else if (rq->bRequest == USBASP_FUNC_READEEPROM) {
 
 		if (!prog_address_newmode)
 			prog_address = (data[3] << 8) | data[2];
@@ -119,12 +135,12 @@ uchar usbFunctionSetup(uchar data[8]) {
 		len = 0xff; /* multiple in */
 		log_print("read EEPROM 0x%lx", prog_address);
 
-	} else if (data[1] == USBASP_FUNC_ENABLEPROG) {
+	} else if (rq->bRequest == USBASP_FUNC_ENABLEPROG) {
 		log_print("enable prog");
 		replyBuffer[0] = 0;//ispEnterProgrammingMode();
 		len = 1;
 
-	} else if (data[1] == USBASP_FUNC_WRITEFLASH) {
+	} else if (rq->bRequest == USBASP_FUNC_WRITEFLASH) {
 		if (!prog_address_newmode)
 			prog_address = (data[3] << 8) | data[2];
 
@@ -139,7 +155,7 @@ uchar usbFunctionSetup(uchar data[8]) {
 		len = 0xff; /* multiple out */
 		log_print("write flash 0x%lx", prog_address);
 
-	} else if (data[1] == USBASP_FUNC_WRITEEEPROM) {
+	} else if (rq->bRequest == USBASP_FUNC_WRITEEEPROM) {
 
 		if (!prog_address_newmode)
 			prog_address = (data[3] << 8) | data[2];
@@ -151,7 +167,7 @@ uchar usbFunctionSetup(uchar data[8]) {
 		len = 0xff; /* multiple out */
 		log_print("write eeprom 0x%lx", prog_address);
 
-	} else if (data[1] == USBASP_FUNC_SETLONGADDRESS) {
+	} else if (rq->bRequest == USBASP_FUNC_SETLONGADDRESS) {
 
 		/* set new mode of address delivering (ignore address delivered in commands) */
 		prog_address_newmode = 1;
@@ -159,7 +175,7 @@ uchar usbFunctionSetup(uchar data[8]) {
 		prog_address = *((unsigned long*) &data[2]);
 		log_print("set Long address to 0x%lx", prog_address);
 
-	} else if (data[1] == USBASP_FUNC_SETISPSCK) {
+	} else if (rq->bRequest == USBASP_FUNC_SETISPSCK) {
 		log_print("set spi clock");
 
 		/* set sck option */
@@ -167,7 +183,7 @@ uchar usbFunctionSetup(uchar data[8]) {
 		replyBuffer[0] = 0;
 		len = 1;
 	
-	} else if (data[1] == USBASP_FUNC_GETCAPABILITIES) {
+	} else if (rq->bRequest == USBASP_FUNC_GETCAPABILITIES) {
 		// log_print("get capabilities asked");
 		replyBuffer[0] = 1;
 		replyBuffer[1] = 0;
@@ -181,7 +197,7 @@ uchar usbFunctionSetup(uchar data[8]) {
 	return len;
 }
 
-uchar usbFunctionRead(uchar *data, uchar len) {
+uchar usbFunctionRead(uchar* data, uchar len) {
 
 	uchar i;
 
@@ -195,7 +211,7 @@ uchar usbFunctionRead(uchar *data, uchar len) {
 	for (i = 0; i < len; i++) {
 		if (prog_state == PROG_STATE_READFLASH) {
 			// data[i] = ispReadFlash(prog_address);
-			data[i] = (prog_address > UINT16_MAX) ? pgm_read_byte_far(prog_address) : pgm_read_byte_near(prog_address);
+			// data[i] = (prog_address > UINT16_MAX) ? pgm_read_byte_far(prog_address) : pgm_read_byte_near(prog_address);
 		} else {
 			// data[i] = ispReadEEPROM(prog_address);
 		}
@@ -210,7 +226,7 @@ uchar usbFunctionRead(uchar *data, uchar len) {
 	return len;
 }
 
-uchar usbFunctionWrite(uchar *data, uchar len) {
+uchar usbFunctionWrite(uchar* data, uchar len) {
 
 	uchar retVal = 0;
 	uchar i;
@@ -280,6 +296,9 @@ uchar usbFunctionWrite(uchar *data, uchar len) {
 int main(void) {
 	uchar i, j;
 
+	// MCUCR = _BV(IVCE);
+	// MCUCR = _BV(IVSEL); // clear IVCE 
+
 	init_debug_uart0();
 
 	// /* no pullups on USB and ISP pins */
@@ -330,4 +349,3 @@ int main(void) {
 	}
 	return 0;
 }
-

@@ -3,7 +3,7 @@
         {
             "name": "avrlibc",
             "includePath": [
-                ""
+                "C:/Users/alexl/projects/il-flatto/bootloader/usbasp.2011-05-28/usbasp.2011-05-28/firmware/usbdrv/*"
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
@@ -23,7 +23,11 @@
             "compilerPath": "C:/Users/alexl/.platformio/packages/toolchain-atmelavr/bin/avr-gcc.exe",
             "compilerArgs": [
                 "-mmcu=atmega1284p",
-                ""
+                "-Wall",
+                "-O2",
+                "-Iusbdrv",
+                "-I.",
+                "-Ttext=0x1E000"
             ]
         }
     ],
