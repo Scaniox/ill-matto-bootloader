@@ -245,6 +245,8 @@ uchar usbFunctionSetup(uchar* data) {
 		prog_nbytes = (data[7] << 8) | data[6];
 		prog_state = PROG_STATE_READFLASH;
 		len = 0xff; /* multiple in */
+		// this allows reading after a write
+		boot_rww_enable_safe();
 		// log_print("read flash from 0x%lx", prog_address);
 
 	} else if (rq->bRequest == USBASP_FUNC_READEEPROM) {
