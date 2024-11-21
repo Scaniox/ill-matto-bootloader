@@ -454,7 +454,7 @@ int main(void) {
 	char mcusr = MCUSR;
 	MCUSR = 0;
 
-	if (!(mcusr == _BV(EXTRF))) {
+	if (!(mcusr & _BV(EXTRF))) {
 		launchApp();
 	}
 
