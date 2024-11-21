@@ -203,6 +203,10 @@ uchar usbFunctionSetup(uchar* data) {
 		// [0x30, 0x00, [byte], 0x00] - respond with signature bytes
 		switch (data[2])
 		{
+		case 0xac: // erase
+			// erase
+			len = 4;
+
 		case 0x30:
 			/* code */
 			replyBuffer[3] = boot_signature_byte_get(data[4] * 2);
@@ -458,7 +462,7 @@ int main(void) {
 	MCUCR = _BV(IVCE);
 	MCUCR = _BV(IVSEL); // clear IVCE 
 
-	init_debug_uart0();
+	// init_debug_uart0();
 
 	log_print("mcusr: %02x", mcusr);
 
