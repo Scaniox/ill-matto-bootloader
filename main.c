@@ -28,6 +28,9 @@
 #define LOGGING_ENABLE 1
 #include "logging.h"
 
+#define pb7LEDON PORTB |= (_BV(PB7));
+#define pb7LEDOFF PORTB &= ~(_BV(PB7));
+
 static uchar replyBuffer[8];
 
 static uchar prog_state = PROG_STATE_IDLE;
@@ -38,7 +41,7 @@ static unsigned long prog_address;
 static unsigned int prog_nbytes = 0;
 static unsigned int prog_pagesize;
 static uchar prog_blockflags;
-static uchar prog_pagecounter;
+static uint16_t prog_pagecounter;
 
 int finished = 0;
 
@@ -386,9 +389,12 @@ uchar usbFunctionWrite(uchar* data, uchar len) {
 				// ispWriteFlash(prog_address, data[i], 1);
 			} else {
 				/* paged */
-				// log_print("write %05x paged  page counter: %u", prog_address, prog_pagecounter);
-				if (prog_address & 0x01) {
-					boot_page_fill_safe(prog_address, (data[i]<<8) + data[i-1]);
+				// boot fill writes in words, writing happens every other byte, but 
+				// both cases have to be dealt with otherwise a few bytes can go missing
+				if ((prog_address & 0x01)) {
+					boot_page_fill_safe(prog_address, ((data[i] << 8) + data[i-1]));
+				} else {
+					boot_page_fill_safe(prog_address, ((data[i+1] << 8) + data[i]));
 				}
 				// ispWriteFlash(prog_address, data[i], 0);
 				prog_pagecounter--;
@@ -397,7 +403,6 @@ uchar usbFunctionWrite(uchar* data, uchar len) {
 					// ispFlushPage(prog_address, data[i]);
 					boot_page_write_safe(prog_address);
 					// log_print("write %05x page flush", prog_address);
-					// log_print("resetting prog page counter to %x", prog_pagesize);
 					prog_pagecounter = prog_pagesize;
 				}
 			}
@@ -425,6 +430,7 @@ uchar usbFunctionWrite(uchar* data, uchar len) {
 
 		prog_address++;
 	}
+	// log_print("eow: prgad: 0x%05x", prog_address);
 
 	return retVal;
 }
@@ -478,8 +484,20 @@ int main(void) {
 	usbInit();
 	log_print("bootloader initted");
 	sei();
+
+	DDRB |= _BV(PB7);
+	timer = 0;
 	while (!finished) {
 		usbPoll();
+		timer++;
+		if (60000 == timer){
+			if(PORTB & _BV(PB7)){
+				pb7LEDOFF;
+			} else {
+				pb7LEDON;
+			}
+			timer = 0;
+		}
 	}
 
 	// wait a second before booting so that avrdude doesn't think we've dissapeared
