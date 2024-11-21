@@ -270,12 +270,14 @@ uchar usbFunctionSetup(uchar* data) {
 		prog_blockflags = data[5] & 0x0F;
 		prog_pagesize += (((unsigned int) data[5] & 0xF0) << 4);
 		if (prog_blockflags & PROG_BLOCKFLAG_FIRST) {
+			// log_print("first block, setting pagecounter");
 			prog_pagecounter = prog_pagesize;
 		}
 		prog_nbytes = (data[7] << 8) | data[6];
 		prog_state = PROG_STATE_WRITEFLASH;
 		len = 0xff; /* multiple out */
-		log_print("write flash 0x%lx", prog_address);
+		// log_print("write flash \naddr: 0x%lx\n pagesize: 0x%x\nblockflags: 0x%x\nnbytes: 0x%x", prog_address, prog_pagesize, prog_blockflags, prog_nbytes);
+		// log_print("page counter %d", prog_pagecounter);
 
 	} else if (rq->bRequest == USBASP_FUNC_WRITEEEPROM) {
 
@@ -332,7 +334,6 @@ uchar usbFunctionRead(uchar* data, uchar len) {
 	/* fill packet ISP mode */
 	for (i = 0; i < len; i++) {
 		if (prog_state == PROG_STATE_READFLASH) {
-			// data[i] = ispReadFlash(prog_address);
 			data[i] = (prog_address > UINT16_MAX) ? pgm_read_byte_far(prog_address) : pgm_read_byte_near(prog_address);
 		} else {
 			data[i] = eeprom_read_byte(prog_address);
@@ -379,20 +380,28 @@ uchar usbFunctionWrite(uchar* data, uchar len) {
 
 			if (prog_pagesize == 0) {
 				/* not paged */
+				log_print("write %05x not paged", prog_address);
 				// ispWriteFlash(prog_address, data[i], 1);
 			} else {
 				/* paged */
+				// log_print("write %05x paged  page counter: %u", prog_address, prog_pagecounter);
+				if (prog_address & 0x01) {
+					boot_page_fill_safe(prog_address, (data[i]<<8) + data[i-1]);
+				}
 				// ispWriteFlash(prog_address, data[i], 0);
 				prog_pagecounter--;
+				// log_print("page counter %d", prog_pagecounter);
 				if (prog_pagecounter == 0) {
 					// ispFlushPage(prog_address, data[i]);
+					boot_page_write_safe(prog_address);
+					// log_print("write %05x page flush", prog_address);
+					// log_print("resetting prog page counter to %x", prog_pagesize);
 					prog_pagecounter = prog_pagesize;
 				}
 			}
 
 		} else {
 			/* EEPROM */
-			// ispWriteEEPROM(prog_address, data[i]);
 			eeprom_write_byte(prog_address, data[i]);
 		}
 
@@ -405,6 +414,8 @@ uchar usbFunctionWrite(uchar* data, uchar len) {
 
 				/* last block and page flush pending, so flush it now */
 				// ispFlushPage(prog_address, data[i]);
+				boot_page_write_safe(prog_address);
+				// log_print("write %05x last page", prog_address);
 			}
 
 			retVal = 1; // Need to return 1 when no more data is to be received
