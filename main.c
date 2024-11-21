@@ -435,14 +435,32 @@ uchar usbFunctionWrite(uchar* data, uchar len) {
 	return retVal;
 }
 
+void launchApp() {
+	usbDeviceDisconnect();
+	// put ISRs back to app
+	MCUCR = _BV(IVCE);
+	MCUCR = 0;
+	// start app
+	__asm("jmp 0");
+}
+
 int main(void) {
 	uchar i, j;
+
+	char mcusr = MCUSR;
+	MCUSR = 0;
+
+	if (!(mcusr == _BV(EXTRF))) {
+		launchApp();
+	}
 
 	// move ISRs to boot flash
 	MCUCR = _BV(IVCE);
 	MCUCR = _BV(IVSEL); // clear IVCE 
 
 	init_debug_uart0();
+
+	log_print("mcusr: %02x", mcusr);
 
 	// /* no pullups on USB and ISP pins */
 	// PORTD = 0;
@@ -506,12 +524,7 @@ int main(void) {
 		usbPoll();
 	}
 
-	usbDeviceDisconnect();
-	// put ISRs back to app
-	MCUCR = _BV(IVCE);
-	MCUCR = 0; 
-	// start app
-	__asm("jmp 0");
+	launchApp();
 
 	return 0;
 }
