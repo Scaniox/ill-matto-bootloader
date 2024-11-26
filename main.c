@@ -395,6 +395,7 @@ uchar usbFunctionWrite(uchar* data, uchar len) {
 				/* paged */
 				// boot fill writes in words, writing happens every other byte, but 
 				// both cases have to be dealt with otherwise a few bytes can go missing
+					
 				if ((prog_address & 0x01)) {
 					boot_page_fill_safe(prog_address, ((data[i] << 8) + data[i-1]));
 				} else {
@@ -405,6 +406,7 @@ uchar usbFunctionWrite(uchar* data, uchar len) {
 				// log_print("page counter %d", prog_pagecounter);
 				if (prog_pagecounter == 0) {
 					// ispFlushPage(prog_address, data[i]);
+					boot_page_erase_safe(prog_address);
 					boot_page_write_safe(prog_address);
 					// log_print("write %05x page flush", prog_address);
 					prog_pagecounter = prog_pagesize;
